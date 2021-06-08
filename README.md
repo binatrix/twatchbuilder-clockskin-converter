@@ -1,4 +1,4 @@
-# twatchbuilder-skinmaker-parser
+# twatchbuilder-clockskin-converter
 On the internet there are several formats to build watchfaces. One of them is the XML based "ClockSkin" format used by various Android watches.
 
 This is a Python script to convert ClockSkin XML files into TWatchBuilder C++ code.
