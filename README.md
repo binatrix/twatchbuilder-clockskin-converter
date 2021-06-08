@@ -3,6 +3,12 @@ On the internet there are several formats to build watchfaces. One of them is th
 
 This is a Python script to convert ClockSkin XML files into TWatchBuilder C++ code.
 
+## Requirements
+To execute the script you need to install these modules:
+
+- pip install pillow
+- pip install elementpath
+
 ## Use
 To use it you must follow these steps:
 - Download a watchface with this format. The site "coolwatchfaces.com" has several models in its "Android" section.
