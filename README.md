@@ -27,10 +27,6 @@ Then upload these artifacts to TWatchBuilder.com:
 - Compile the watch
 - Try it on your TWatch2020 watch
 
-If you want to try it, you can follow us on the project's GitHub. 
-
-https://github.com/binatrix/twatchbuilder-clockskin-parser
-
 This is still a work in progress!!!! 
 
 Good look
