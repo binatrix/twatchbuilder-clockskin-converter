@@ -25,11 +25,14 @@ def resize(scale, file_in, file_out):
     new_image = image.resize((new_width, new_height))
     new_image.save(file_out)
 
-def get_node(elem, tag):
+def get_node_str(elem, tag, defval):
     node = elem.find(tag)
     if node == None:
-        return None
+        return defval
     return node.text
+
+def get_node_int(elem, tag, defval):
+    return int(get_node_str(elem, tag, defval))
 
 def process(path, prefix, use_back):
     path_watch = path + "\\twatch"
@@ -54,27 +57,15 @@ def process(path, prefix, use_back):
     resize(72 / width, path + "\\clock_skin_model.png", path_watch + "\\icon.png")
     
     for elem1 in root1:
-        name = get_node(elem1, "name")
-        arraytype = get_node(elem1, "arraytype")
-        if arraytype == None:
-            arraytype = 0
-        centerX = get_node(elem1, "centerX")
-        if centerX == None:
-            centerX = 0
-        centerY = get_node(elem1, "centerY")
-        if centerY == None:
-            centerY = 0
-        rotate = get_node(elem1, "rotate")
-        if rotate == None:
-            rotate = 0
-        mulrotate = get_node(elem1, "mulrotate")
-        if mulrotate == None:
-            mulrotate = 0
-        direction = get_node(elem1, "direction")
-        if direction == None:
-            direction = 0
-        x = round(int(centerX) * scale)
-        y = round(int(centerY) * scale)
+        name = get_node_str(elem1, "name", "")
+        arraytype = get_node_int(elem1, "arraytype", 0)
+        centerX = get_node_int(elem1, "centerX", 0)
+        centerY = get_node_int(elem1, "centerY", 0)
+        rotate = get_node_int(elem1, "rotate", 0)
+        mulrotate = get_node_int(elem1, "mulrotate", 0)
+        direction = get_node_int(elem1, "direction", 0)
+        x = round(centerX * scale)
+        y = round(centerY * scale)
         i = i + 1
 
         if name != None:
@@ -93,14 +84,16 @@ def process(path, prefix, use_back):
                     resize(scale, path + "\\" + image, path_asset + "\\" + name1)
                     buf1.append(name1)
                     buf2.append(name2)
-                # get colon image width
-                image = Image.open(path_asset + "\\" + buf1[len(buf1) - 1])
-                w0, height = image.size
+                w0 = 0
+                if arraytype == 2 or arraytype == 6:
+                    if len(buf1) > 10:
+                        # get colon image width
+                        image = Image.open(path_asset + "\\" + buf1[10])
+                        w0, height = image.size
                 # get digit image width
                 image = Image.open(path_asset + "\\" + buf1[0])
                 w1, height = image.size
-                json = {"t" : int(arraytype), "x": x, "y": y, "r": int(rotate), "d": int(direction), "w0": w0, "w1": w1, "images": buf2}
-##                print(json)
+                json = {"t" : arraytype, "x": x, "y": y, "r": rotate, "d": direction, "w0": w0, "w1": w1, "images": buf2}
                 images.append(json)
                 
             else:
@@ -108,8 +101,7 @@ def process(path, prefix, use_back):
                 resize(scale, path + "\\" + name, path_asset + "\\" + name1)
                 image = Image.open(path_asset + "\\" + name1)
                 width, height = image.size
-                json = {"t" : int(arraytype), "x": int(x), "y": int(y), "r": int(rotate), "d": int(direction), "w": width, "h": height, "image": name2}
-##                print(json)
+                json = {"t" : arraytype, "x": x, "y": y, "r": rotate, "d": direction, "w": width, "h": height, "image": name2}
                 images.append(json)
 
     f.write("\n")
@@ -143,8 +135,9 @@ def process(path, prefix, use_back):
             w1 = img1["w1"]
             wx = round((w1 + w0) / 2)
             if t == 2: # monthday
-                sep = img1["images"][len(img1["images"]) - 1]
-                buf = buf + "\t__clock.add_clock_back(&" + sep + ", {" + str(x) + ", " + y + "});\n"
+                if len(img1["images"]) > 10: # separator
+                    sep = img1["images"][10]
+                    buf = buf + "\t__clock.add_clock_back(&" + sep + ", {" + str(x) + ", " + y + "});\n"
                 x1 = x - wx
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_MONTH_UNIT, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 x1 = x1 - w1
@@ -171,8 +164,9 @@ def process(path, prefix, use_back):
                 j = j + 1
                 
             elif t == 6: # hour-minute
-                sep = img1["images"][len(img1["images"]) - 1]
-                buf = buf + "\t__clock.add_clock_back(&" + sep + ", {" + str(x) + ", " + y + "});\n"
+                if len(img1["images"]) > 10: # separator
+                    sep = img1["images"][10]
+                    buf = buf + "\t__clock.add_clock_back(&" + sep + ", {" + str(x) + ", " + y + "});\n"
                 x1 = x - wx
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_HOUR_UNIT, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 x1 = x1 - w1
@@ -211,26 +205,39 @@ def process(path, prefix, use_back):
                 a = 1
 
             elif t == 12: # steps
-                buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_HUNDRED, __images_" + str(k) + ", {" + str(x) + ", " + y + "});\n"
-                x1 = x - w1
-                buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_THOUSAND, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
-                x1 = x1 - w1
+                x1 = x - (2 * w1)
+                if len(img1["images"]) > 10:
+                    lead = img1["images"][10]
+                    buf = buf + "\t__clock.add_clock_back(&" + lead + ", {" + str(x1) + ", " + y + "});\n"
+                    j = j + 1
+                    x1 = x1 + w1
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_TEN_THOUSAND, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
-                x1 = x + w1
+                x1 = x1 + w1
+                buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_THOUSAND, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
+                x1 = x1 + w1
+                buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_HUNDRED, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
+                x1 = x1 + w1
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_TEN, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 x1 = x1 + w1
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_UNIT, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 j = j + 5
                 
             elif t == 14: # battery
-                sep = img1["images"][len(img1["images"]) - 1]
-                x1 = x - round(w1 / 2)
+                if len(img1["images"]) > 10:
+                    x1 = x - w1
+                    lead = img1["images"][10]
+                    buf = buf + "\t__clock.add_clock_back(&" + lead + ", {" + str(x1) + ", " + y + "});\n"
+                    j = j + 1
+                x1 = x
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_BATTERY_TEN, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 x1 = x1 + w1
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_BATTERY_UNIT, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
-                x1 = x1 + w1
-                buf = buf + "\t__clock.add_clock_back(&" + sep + ", {" + str(x1) + ", " + y + "});\n"
-                j = j + 3
+                j = j + 2
+                if len(img1["images"]) > 11:
+                    x1 = x1 + w1
+                    perc = img1["images"][11]
+                    buf = buf + "\t__clock.add_clock_back(&" + perc + ", {" + str(x1) + ", " + y + "});\n"
+                    j = j + 1
 
             elif t == 16: # year
                 x1 = x - round(w1 / 2)
@@ -302,5 +309,5 @@ def process(path, prefix, use_back):
     f.write("}\n")
     f.close()
 
-# Main 
-process("C:\\Users\\Mchav\\Downloads\\clocks\\Vm_626_a", 'Vm_626_a', True)
+# Main
+process("C:\\Users\\Mchav\\Downloads\\clocks\\Vm_611a", "Vm_611a", True)
