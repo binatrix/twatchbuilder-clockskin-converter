@@ -222,7 +222,7 @@ def process(path, prefix, use_back, new_width = 0):
                 a = 1
 
             elif t == 12: # steps
-                x1 = x - (2 * w1)
+                x1 = x - (3 * w1)
                 if len(img1["images"]) > 10:
                     lead = img1["images"][10]
                     buf = buf + "\t__clock.add_clock_back(&" + lead + ", {" + str(x1) + ", " + y + "});\n"
@@ -340,6 +340,4 @@ def process(path, prefix, use_back, new_width = 0):
         shutil.rmtree(path)
 
 # Main
-process("C:\\Users\\Marcelo\\Downloads\\clocks\\Vm_611a.zip", "Vm_611a", True)
-##process("C:\\Users\\Marcelo\\Downloads\\clocks\\Radar_2", "Radar_2", True)
-##process("C:\\Users\\Marcelo\\Downloads\\clocks\\x3_green.zip", "x3_green", True, 364)
+process("C:\\Users\\Marcelo\\Downloads\\clocks\\galaxy_watch.zip", "galaxy2", True)
