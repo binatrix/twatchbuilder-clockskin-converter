@@ -1,6 +1,12 @@
 import xml.etree.ElementTree as ET
 from PIL import Image
 import os
+import zipfile
+import shutil
+
+def get_size(image_path):
+    with Image.open(image_path) as image:
+        return image.size
 
 def rename(prefix, name):
     name2 = name
@@ -14,16 +20,16 @@ def rename(prefix, name):
     return name2.lower()
     
 def resize(scale, file_in, file_out):
-    image = Image.open(file_in) #.convert('RGB')
-    width, height = image.size
-    new_width = (int)(width * scale)
-    new_height = (int)(height * scale)
-    if new_width == 0:
-        new_width = 1
-    if new_height == 0:
-        new_height = 1
-    new_image = image.resize((new_width, new_height))
-    new_image.save(file_out)
+    with Image.open(file_in) as image: #.convert('RGB')
+        width, height = image.size
+        new_width = (int)(width * scale)
+        new_height = (int)(height * scale)
+        if new_width == 0:
+            new_width = 1
+        if new_height == 0:
+            new_height = 1
+        new_image = image.resize((new_width, new_height))
+        new_image.save(file_out)
 
 def get_node_str(elem, tag, defval):
     node = elem.find(tag)
@@ -34,7 +40,20 @@ def get_node_str(elem, tag, defval):
 def get_node_int(elem, tag, defval):
     return int(get_node_str(elem, tag, defval))
 
-def process(path, prefix, use_back):
+def process(path, prefix, use_back, new_width = 0):
+    ## if ZIP file, uncrompress ClockSkin
+    is_zip = path[-4:] == ".zip"
+    if is_zip:
+        zip_file = path
+        path = os.path.dirname(zip_file)
+        with zipfile.ZipFile(zip_file, "r") as zip_ref:
+            zip_ref.extractall(path)
+        path = zip_file[:-4]
+
+    if not os.path.exists(path + "\\clock_skin.xml"):
+        raise Exception("This is not an ClockSkin file")
+        
+    ## convert ClockSkin
     path_watch = path + "\\twatch"
     if not os.path.exists(path_watch):
         os.makedirs(path_watch)
@@ -51,10 +70,11 @@ def process(path, prefix, use_back):
     images = []
     scale = 1
 
-    image = Image.open(path + "\\clock_skin_model.png")
-    width, height = image.size
-    scale = 240 / width
+    width, height = get_size(path + "\\clock_skin_model.png")
     resize(72 / width, path + "\\clock_skin_model.png", path_watch + "\\icon.png")
+    if new_width != 0:
+        width = new_width
+    scale = 240 / width
     
     for elem1 in root1:
         name = get_node_str(elem1, "name", "")
@@ -68,7 +88,7 @@ def process(path, prefix, use_back):
         y = round(centerY * scale)
         i = i + 1
 
-        if name != None:
+        if name != None and name != "":
             name1 = rename(prefix, name)
             name2 = name1[:-4]
             if ".xml" in name:
@@ -88,19 +108,16 @@ def process(path, prefix, use_back):
                 if arraytype == 2 or arraytype == 6:
                     if len(buf1) > 10:
                         # get colon image width
-                        image = Image.open(path_asset + "\\" + buf1[10])
-                        w0, height = image.size
+                        w0, height = get_size(path_asset + "\\" + buf1[10])
                 # get digit image width
-                image = Image.open(path_asset + "\\" + buf1[0])
-                w1, height = image.size
+                w1, height = get_size(path_asset + "\\" + buf1[0])
                 json = {"t" : arraytype, "x": x, "y": y, "r": rotate, "d": direction, "w0": w0, "w1": w1, "images": buf2}
                 images.append(json)
                 
             else:
                 f.write("LV_IMG_DECLARE(" + name2 + ");\n")
                 resize(scale, path + "\\" + name, path_asset + "\\" + name1)
-                image = Image.open(path_asset + "\\" + name1)
-                width, height = image.size
+                width, height = get_size(path_asset + "\\" + name1)
                 json = {"t" : arraytype, "x": x, "y": y, "r": rotate, "d": direction, "w": width, "h": height, "image": name2}
                 images.append(json)
 
@@ -309,5 +326,20 @@ def process(path, prefix, use_back):
     f.write("}\n")
     f.close()
 
+    ## create output zip file
+    zip_out = path + "_twatchbuilder.zip"
+    if os.path.exists(zip_out):
+        os.remove(zip_out)
+    zf = zipfile.ZipFile(zip_out, "w", zipfile.ZIP_DEFLATED)
+    for dirname, subdirs, files in os.walk(path_watch):
+        length = len(path_watch)
+        for filename in files:
+            zf.write(os.path.join(dirname, filename), os.path.join(dirname[length:], filename))
+    zf.close()
+    if is_zip:
+        shutil.rmtree(path)
+
 # Main
-process("C:\\Users\\Mchav\\Downloads\\clocks\\Vm_611a", "Vm_611a", True)
+process("C:\\Users\\Marcelo\\Downloads\\clocks\\Vm_611a.zip", "Vm_611a", True)
+##process("C:\\Users\\Marcelo\\Downloads\\clocks\\Radar_2", "Radar_2", True)
+##process("C:\\Users\\Marcelo\\Downloads\\clocks\\x3_green.zip", "x3_green", True, 364)
