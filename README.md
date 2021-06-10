@@ -32,4 +32,4 @@ Now, you can create a watch with this ZIP artifact in TWatchBuilder.com:
 - Compile the watch
 - Try it on your TWatch2020 watch
 
-Good look !!
+Good luck !!
