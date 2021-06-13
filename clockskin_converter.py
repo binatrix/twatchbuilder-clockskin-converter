@@ -55,11 +55,11 @@ def process(path, prefix, use_back, new_width = 0):
         
     ## convert ClockSkin
     path_watch = path + "\\twatch"
-    if not os.path.exists(path_watch):
-        os.makedirs(path_watch)
+    if os.path.exists(path_watch):
+        shutil.rmtree(path_watch)
+    os.makedirs(path_watch)
     path_asset = path_watch + "\\assets"
-    if not os.path.exists(path_asset):
-        os.makedirs(path_asset)
+    os.makedirs(path_asset)
 
     f = open(path_watch + "\\twatch.cpp", "w")
     f.write("#include \"StandardClock.h\"\n\n")
@@ -239,13 +239,16 @@ def process(path, prefix, use_back, new_width = 0):
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_STEPS_UNIT, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 j = j + 5
                 
+            elif t == 13: # heartbeat
+                a = 1
+
             elif t == 14: # battery
                 if len(img1["images"]) > 10:
-                    x1 = x - w1
+                    x1 = x - (2 * round(w1 / 2))
                     lead = img1["images"][10]
                     buf = buf + "\t__clock.add_clock_back(&" + lead + ", {" + str(x1) + ", " + y + "});\n"
                     j = j + 1
-                x1 = x
+                x1 = x #- round(w1 / 2)
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_BATTERY_TEN, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 x1 = x1 + w1
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_BATTERY_UNIT, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
