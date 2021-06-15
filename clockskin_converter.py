@@ -183,7 +183,7 @@ def process(path, prefix, use_back, new_width = 0):
             elif t == 6: # hour-minute
                 if len(img1["images"]) > 10: # separator
                     sep = img1["images"][10]
-                    buf = buf + "\t__clock.add_clock_back(&" + sep + ", {" + str(x) + ", " + y + "});\n"
+                    buf = buf + "\t__clock.add_clock_hand(TIME_RES_SECOND_BLINK, &" + sep + ", {" + str(x) + ", " + y + "});\n"
                 x1 = x - wx
                 buf = buf + "\t__clock.add_clock_sprite(TIME_RES_HOUR_UNIT, __images_" + str(k) + ", {" + str(x1) + ", " + y + "});\n"
                 x1 = x1 - w1
